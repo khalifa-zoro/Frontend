@@ -14,6 +14,7 @@ const StepThree: React.FC<StepThreeProps> = ({ onNext, onBack }) => {
 		userType,
 		setEmail: storeEmail,
 		setSignupToken,
+		setResendAfterSeconds,
 		isLoading,
 		setLoading,
 		error,
@@ -41,10 +42,20 @@ const StepThree: React.FC<StepThreeProps> = ({ onNext, onBack }) => {
 			// Store email for the verify step
 			storeEmail(email);
 
-			// Store the numeric token for display in StepFour
-			if (response.token) {
-				setSignupToken(response.token);
+			// Store the OTP code for display in StepFour
+			const otp =
+				response.otp_code ??
+				(response.token != null ? String(response.token) : null);
+			if (otp) {
+				setSignupToken(otp);
 			}
+
+			// Store the resend cooldown so StepFour can start its timer
+			const resendAfter =
+				response.info && typeof response.info === "object"
+					? response.info.resend_after_seconds
+					: 60;
+			setResendAfterSeconds(resendAfter);
 
 			// Password is held locally — will be sent in StepFive
 			// Store it temporarily in sessionStorage so StepFive can use it

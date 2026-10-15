@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { useSignupStore } from "../../../../store/useSignupStore";
 import {
@@ -18,11 +18,13 @@ const StepFour: React.FC<StepFourProps> = ({ onNext, onBack }) => {
 	const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 	const [resendLoading, setResendLoading] = useState(false);
 	const [resendMessage, setResendMessage] = useState("");
+	const [countdown, setCountdown] = useState(0);
 
 	const {
 		email,
 		userType,
 		signupToken,
+		resendAfterSeconds,
 		setSignupToken,
 		isLoading,
 		setLoading,
@@ -30,6 +32,22 @@ const StepFour: React.FC<StepFourProps> = ({ onNext, onBack }) => {
 		setError,
 		clearError,
 	} = useSignupStore();
+
+	// Start the resend cooldown timer when the step mounts with a token.
+	useEffect(() => {
+		if (signupToken && countdown === 0) {
+			setCountdown(resendAfterSeconds || 60);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, []);
+
+	useEffect(() => {
+		if (countdown <= 0) return;
+		const timer = setInterval(() => {
+			setCountdown((prev) => (prev <= 1 ? 0 : prev - 1));
+		}, 1000);
+		return () => clearInterval(timer);
+	}, [countdown]);
 
 	const handleChange = useCallback(
 		(index: number, value: string) => {
@@ -108,12 +126,29 @@ const StepFour: React.FC<StepFourProps> = ({ onNext, onBack }) => {
 
 		try {
 			const response = await signupWithEmail({ email, user_type: userType });
-			if (response.token) {
-				setSignupToken(response.token);
+			const otp =
+				response.otp_code ??
+				(response.token != null ? String(response.token) : null);
+			if (otp) {
+				setSignupToken(otp);
 			}
+			const after =
+				response.info && typeof response.info === "object"
+					? response.info.resend_after_seconds
+					: 60;
+			setCountdown(after);
 			setResendMessage("A new code has been sent to your email.");
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		} catch (err: any) {
-			setError(err.message || "Failed to resend code. Please try again.");
+			if (err?.status === 429 && err?.data?.retry_after) {
+				setCountdown(err.data.retry_after);
+				setError(
+					err.message ||
+						"Please wait before requesting another code.",
+				);
+			} else {
+				setError(err.message || "Failed to resend code. Please try again.");
+			}
 		} finally {
 			setResendLoading(false);
 		}
@@ -199,10 +234,14 @@ const StepFour: React.FC<StepFourProps> = ({ onNext, onBack }) => {
 				Did not receive code?{" "}
 				<button
 					onClick={handleResend}
-					disabled={resendLoading}
+					disabled={resendLoading || countdown > 0}
 					className="text-[#6A0DAD] font-semibold hover:underline disabled:opacity-50"
 				>
-					{resendLoading ? "Sending..." : "Resend"}
+					{resendLoading
+						? "Sending..."
+						: countdown > 0
+							? `Resend in ${countdown}s`
+							: "Resend"}
 				</button>
 			</p>
 		</div>

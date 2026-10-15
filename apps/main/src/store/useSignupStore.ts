@@ -7,7 +7,8 @@ interface SignupState {
 	userType: "Freelancer" | "Client" | null;
 	userName: string;
 	currentStep: number;
-	signupToken: number | null;
+	signupToken: string | null;
+	resendAfterSeconds: number;
 
 	// Loading & error state
 	isLoading: boolean;
@@ -18,7 +19,8 @@ interface SignupState {
 	setUserType: (type: "Freelancer" | "Client" | null) => void;
 	setUserName: (name: string) => void;
 	setCurrentStep: (step: number) => void;
-	setSignupToken: (token: number | null) => void;
+	setSignupToken: (token: string | null) => void;
+	setResendAfterSeconds: (seconds: number) => void;
 	setLoading: (loading: boolean) => void;
 	setError: (error: string) => void;
 	clearError: () => void;
@@ -33,6 +35,7 @@ export const useSignupStore = create<SignupState>()(
 			userName: "",
 			currentStep: 1,
 			signupToken: null,
+			resendAfterSeconds: 60,
 			isLoading: false,
 			error: "",
 
@@ -41,6 +44,7 @@ export const useSignupStore = create<SignupState>()(
 			setUserName: (name) => set({ userName: name }),
 			setCurrentStep: (step) => set({ currentStep: step }),
 			setSignupToken: (token) => set({ signupToken: token }),
+			setResendAfterSeconds: (seconds) => set({ resendAfterSeconds: seconds }),
 			setLoading: (loading) => set({ isLoading: loading }),
 			setError: (error) => set({ error }),
 			clearError: () => set({ error: "" }),
@@ -51,6 +55,7 @@ export const useSignupStore = create<SignupState>()(
 					userName: "",
 					currentStep: 1,
 					signupToken: null,
+					resendAfterSeconds: 60,
 					isLoading: false,
 					error: "",
 				}),

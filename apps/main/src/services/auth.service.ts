@@ -73,8 +73,16 @@ export interface LoginResponse {
 // Signup
 export interface SignupEmailResponse {
 	message: string;
-	token: number;
-	info: string;
+	otp_code?: string;
+	token?: number; // legacy field name used by older backends
+	warning?: string;
+	info?:
+		| {
+				expires_in_seconds: number;
+				resend_after_seconds: number;
+				username?: string;
+		  }
+		| string; // legacy: some backends returned a plain string
 }
 
 export interface VerifyTokenResponse {
