@@ -53,13 +53,22 @@ api.interceptors.response.use(
       }
     }
 
+    let data = error.response?.data;
+    let message =
+      (typeof data === "string" ? data : undefined) ||
+      data?.message ||
+      data?.detail ||
+      data?.error ||
+      error.message ||
+      "Something went wrong";
+    if (Array.isArray(message)) {
+      message = message.join("; ");
+    }
+
     return Promise.reject({
-      message:
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Something went wrong",
+      message,
       status: error.response?.status,
-      data: error.response?.data,
+      data,
     });
   },
 );
